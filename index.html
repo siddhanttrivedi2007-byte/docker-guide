@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding Docker: The Interactive Beginner's Guide</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        docker: {
+                            blue: '#099cec',
+                            dark: '#0db7ed',
+                            navy: '#061d2a',
+                            card: '#0d1829',
+                            border: '#1e293b'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+        .glow-blue {
+            box-shadow: 0 0 40px -10px rgba(9, 156, 236, 0.3);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 25px -5px rgba(13, 183, 237, 0.4);
+        }
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #030712;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #099cec;
+        }
+        /* Floating animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+        /* Pulse slow */
+        @keyframes pulseSlow {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 0.6; }
+        }
+        .animate-pulse-bg {
+            animation: pulseSlow 6s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="selection:bg-docker-blue selection:text-white relative min-h-screen">
+
+    <!-- Background Ambient Glows -->
+    <div class="fixed top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none animate-pulse-bg"></div>
+    <div class="fixed bottom-10 right-10 w-[400px] h-[400px] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse-bg"></div>
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-50 glass-panel border-b border-slate-800/80 px-6 py-4">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-docker-blue p-2 rounded-xl text-white shadow-lg shadow-docker-blue/30">
+                    <i data-lucide="container" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <span class="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-docker-blue">Docker Demystified</span>
+                    <span class="hidden sm:inline-block text-xs bg-slate-800 text-cyan-400 px-2 py-0.5 rounded-full ml-2 border border-cyan-500/20 font-mono">CS 101 Visual Article</span>
+                </div>
+            </div>
+            <nav class="hidden md:flex items-center space-x-6 text-sm font-medium text-slate-400">
+                <a href="#problem" class="hover:text-docker-blue transition-colors">1. The Problem</a>
+                <a href="#comparison" class="hover:text-docker-blue transition-colors">2. VMs vs Containers</a>
+                <a href="#architecture" class="hover:text-docker-blue transition-colors">3. Core Architecture</a>
+                <a href="#terminal" class="hover:text-docker-blue transition-colors">4. Live Terminal</a>
+            </nav>
+            <a href="#terminal" class="bg-docker-blue/10 hover:bg-docker-blue/20 text-docker-blue border border-docker-blue/30 px-4 py-2 rounded-lg text-sm font-semibold transition-all">
+                Try Interactive CLI
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-24 space-y-32">
+
+        <!-- HERO SECTION -->
+        <section class="relative pt-8 pb-4 text-center space-y-6">
+            <div class="inline-flex items-center space-x-2 bg-slate-900/80 border border-slate-700/60 rounded-full px-4 py-1.5 text-xs text-slate-300 backdrop-blur-sm">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>An Interactive Scrollytelling Primer</span>
+            </div>
+            
+            <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-100 max-w-4xl mx-auto leading-tight">
+                Stop saying <span class="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-docker-blue">"It works on my machine."</span>
+            </h1>
+            
+            <p class="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto font-normal leading-relaxed">
+                Ever coded something that worked perfectly on your laptop, but broke the instant you deployed it to a server or shared it with a friend? Welcome to Docker.
+            </p>
+
+            <div class="pt-4 flex flex-wrap justify-center gap-4">
+                <a href="#problem" class="inline-flex items-center space-x-2 bg-docker-blue hover:bg-docker-dark text-slate-950 font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-docker-blue/25 transition-all transform hover:-translate-y-0.5">
+                    <span>Start Reading</span>
+                    <i data-lucide="arrow-down" class="w-4 h-4"></i>
+                </a>
+            </div>
+        </section>
+
+        <!-- SECTION 1: THE PROBLEM -->
+        <section id="problem" class="scroll-mt-24 space-y-8">
+            <div class="border-l-4 border-docker-blue pl-4">
+                <h2 class="text-xs uppercase tracking-widest text-docker-blue font-mono font-semibold">Section 01</h2>
+                <h3 class="text-2xl sm:text-3xl font-bold text-white">The Classic Developer Dilemma</h3>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 items-center">
+                <div class="space-y-4 text-slate-300 leading-relaxed">
+                    <p>
+                        Imagine baking a cake in your home oven. It turns out perfect. Now try baking the exact same recipe in a different kitchen, with a different oven, different altitude, and different measuring cups. It might burn, fail to rise, or taste completely off.
+                    </p>
+                    <p>
+                        Software works the same way. Your computer has specific versions of <code class="text-cyan-400 bg-slate-900 px-2 py-0.5 rounded font-mono text-sm">Node.js</code>, <code class="text-cyan-400 bg-slate-900 px-2 py-0.5 rounded font-mono text-sm">Python</code>, operating system libraries, and environment variables installed.
+                    </p>
+                    <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-sm space-y-2">
+                        <div class="flex items-center space-x-2 text-rose-400 font-semibold">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                            <span>The Environment Crisis:</span>
+                        </div>
+                        <ul class="list-disc list-inside text-slate-400 space-y-1">
+                            <td>"Works on macOS, fails on Linux server."</td>
+                            <td>"Missing Node v18 dependency on partner's laptop."</td>
+                            <td>"Conflicting database configurations."</td>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Interactive Dilemma Card -->
+                <div class="glass-panel p-6 rounded-2xl relative border border-slate-800 glow-blue">
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="text-xs font-mono text-slate-400">SIMULATION: Code Deployment</span>
+                        <span id="status-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            Dev Machine: OK
+                        </span>
+                    </div>
+
+                    <!-- Environment visual -->
+                    <div class="space-y-4">
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 relative">
+                            <div class="text-xs font-mono text-slate-500 mb-2">// App Dependencies</div>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-2.5 py-1 bg-blue-500/10 text-blue-400 rounded text-xs border border-blue-500/20 font-mono">Python 3.11</span>
+                                <span class="px-2.5 py-1 bg-purple-500/10 text-purple-400 rounded text-xs border border-purple-500/20 font-mono">PostgreSQL 15</span>
+                                <span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 rounded text-xs border border-amber-500/20 font-mono">Ubuntu 22.04 Libs</span>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Switch -->
+                        <div class="bg-slate-900/90 p-4 rounded-xl flex items-center justify-between border border-slate-800">
+                            <div>
+                                <div class="text-sm font-semibold text-white">Target Environment</div>
+                                <div id="target-env-desc" class="text-xs text-slate-400">Developer Laptop (Matching Setup)</div>
+                            </div>
+                            <button id="toggle-env-btn" class="bg-docker-blue hover:bg-docker-dark text-slate-950 font-bold px-4 py-2 rounded-lg text-xs transition-all flex items-center space-x-1">
+                                <span>Deploy to Production Server</span>
+                                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+
+                        <!-- Console log result -->
+                        <div id="deploy-console" class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 font-mono text-xs text-emerald-400 min-h-[70px] flex items-center">
+                            🚀 [Status 200] Application running smoothly on Dev Machine.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: VIRTUAL MACHINES VS CONTAINERS -->
+        <section id="comparison" class="scroll-mt-24 space-y-8">
+            <div class="border-l-4 border-docker-blue pl-4">
+                <h2 class="text-xs uppercase tracking-widest text-docker-blue font-mono font-semibold">Section 02</h2>
+                <h3 class="text-2xl sm:text-3xl font-bold text-white">Virtual Machines vs. Containers</h3>
+                <p class="text-slate-400 text-sm mt-1">Why containers are ultra-lightweight compared to traditional VMs.</p>
+            </div>
+
+            <!-- Comparison Toggle / Interactive Slider -->
+            <div class="glass-panel p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-8">
+                <!-- Selector Tabs -->
+                <div class="flex justify-center">
+                    <div class="bg-slate-950 p-1.5 rounded-xl border border-slate-800 inline-flex space-x-2">
+                        <button id="tab-vm" onclick="switchTech('vm')" class="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-white">
+                            Traditional Virtual Machines (VMs)
+                        </button>
+                        <button id="tab-container" onclick="switchTech('container')" class="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all bg-docker-blue text-slate-950 shadow-md shadow-docker-blue/20">
+                            Docker Containers
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Visual Stack Comparison -->
+                <div class="grid md:grid-cols-12 gap-8 items-center">
+                    <!-- Dynamic Layer Visualization (7 cols) -->
+                    <div class="md:col-span-7 space-y-2 relative" id="architecture-stack">
+                        <!-- Rendered via JavaScript for smooth transitions -->
+                    </div>
+
+                    <!-- Tech Stats & Explanation (5 cols) -->
+                    <div class="md:col-span-5 space-y-6">
+                        <div>
+                            <span id="tech-badge" class="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-docker-blue/10 text-docker-blue border border-docker-blue/20">DOCKER ARCHITECTURE</span>
+                            <h4 id="tech-title" class="text-2xl font-bold text-white mt-2">Lightweight & Fast</h4>
+                            <p id="tech-desc" class="text-sm text-slate-400 mt-2 leading-relaxed">
+                                Containers share the host operating system's kernel. They only package your application code and its specific dependencies—no redundant Guest OS required!
+                            </p>
+                        </div>
+
+                        <!-- Metrics Grid -->
+                        <div class="grid grid-cols-2 gap-4 font-mono">
+                            <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                                <div class="text-xs text-slate-500 uppercase">Startup Time</div>
+                                <div id="stat-startup" class="text-lg font-bold text-emerald-400">~ Seconds</div>
+                            </div>
+                            <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                                <div class="text-xs text-slate-500 uppercase">Disk Footprint</div>
+                                <div id="stat-size" class="text-lg font-bold text-emerald-400">MBs (Tiny)</div>
+                            </div>
+                            <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                                <div class="text-xs text-slate-500 uppercase">OS Overhead</div>
+                                <div id="stat-os" class="text-lg font-bold text-cyan-400">Shared Host OS</div>
+                            </div>
+                            <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                                <div class="text-xs text-slate-500 uppercase">Efficiency</div>
+                                <div id="stat-efficiency" class="text-lg font-bold text-cyan-400">Near-Native</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: CORE ARCHITECTURE BREAKDOWN -->
+        <section id="architecture" class="scroll-mt-24 space-y-8">
+            <div class="border-l-4 border-docker-blue pl-4">
+                <h2 class="text-xs uppercase tracking-widest text-docker-blue font-mono font-semibold">Section 03</h2>
+                <h3 class="text-2xl sm:text-3xl font-bold text-white">The Docker Ecosystem</h3>
+                <p class="text-slate-400 text-sm mt-1">Click on any core component below to see how they work together.</p>
+            </div>
+
+            <!-- Interactive Architecture Explorer -->
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Component Selector Cards -->
+                <div class="lg:col-span-1 space-y-3">
+                    <button onclick="selectConcept('dockerfile')" id="card-dockerfile" class="concept-card w-full text-left p-4 rounded-xl glass-panel border border-docker-blue/40 bg-docker-blue/5 transition-all hover:border-docker-blue">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2.5 rounded-lg bg-blue-500/10 text-blue-400">
+                                <i data-lucide="file-code" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-white text-sm">1. Dockerfile</h4>
+                                <p class="text-xs text-slate-400">The Blueprint / Recipe</p>
+                            </div>
+                        </div>
+                    </button>
+
+                    <button onclick="selectConcept('image')" id="card-image" class="concept-card w-full text-left p-4 rounded-xl glass-panel border border-slate-800 transition-all hover:border-docker-blue">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2.5 rounded-lg bg-purple-500/10 text-purple-400">
+                                <i data-lucide="layers" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-white text-sm">2. Docker Image</h4>
+                                <p class="text-xs text-slate-400">The Read-Only Executable</p>
+                            </div>
+                        </div>
+                    </button>
+
+                    <button onclick="selectConcept('container')" id="card-container" class="concept-card w-full text-left p-4 rounded-xl glass-panel border border-slate-800 transition-all hover:border-docker-blue">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+                                <i data-lucide="box" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-white text-sm">3. Container</h4>
+                                <p class="text-xs text-slate-400">The Live Running Instance</p>
+                            </div>
+                        </div>
+                    </button>
+
+                    <button onclick="selectConcept('hub')" id="card-hub" class="concept-card w-full text-left p-4 rounded-xl glass-panel border border-slate-800 transition-all hover:border-docker-blue">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2.5 rounded-lg bg-cyan-500/10 text-cyan-400">
+                                <i data-lucide="cloud-download" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-white text-sm">4. Docker Hub</h4>
+                                <p class="text-xs text-slate-400">The Global Registry</p>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Deep Dive Detail View -->
+                <div class="lg:col-span-2 glass-panel p-6 sm:p-8 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span id="concept-tag" class="text-xs font-mono text-docker-blue bg-docker-blue/10 px-2 py-1 rounded">BUILD PHASE</span>
+                            <span id="concept-analog" class="text-xs text-slate-400 font-mono">Analogy: The Architectural Blueprint</span>
+                        </div>
+
+                        <h3 id="concept-title" class="text-2xl font-bold text-white">The Dockerfile</h3>
+                        
+                        <p id="concept-body" class="text-slate-300 text-sm leading-relaxed">
+                            A simple text document containing instructions on how to build a Docker Image. It tells Docker what operating system base to start from, what files to copy, and what commands to run when starting up.
+                        </p>
+
+                        <!-- Code / Interactive Preview snippet inside details -->
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs overflow-x-auto" id="concept-code">
+                            <div class="text-slate-500 mb-1"># Example Dockerfile</div>
+                            <span class="text-purple-400">FROM</span> node:18-alpine<br>
+                            <span class="text-purple-400">WORKDIR</span> /app<br>
+                            <span class="text-purple-400">COPY</span> package*.json ./<br>
+                            <span class="text-purple-400">RUN</span> npm install<br>
+                            <span class="text-purple-400">COPY</span> . .<br>
+                            <span class="text-purple-400">CMD</span> ["node", "server.js"]
+                        </div>
+                    </div>
+
+                    <!-- Flow sequence hint -->
+                    <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+                        <span>Workflow Stage:</span>
+                        <div class="flex items-center space-x-2 font-mono">
+                            <span class="text-docker-blue font-bold">Dockerfile</span> &rarr;
+                            <span>Image</span> &rarr;
+                            <span>Container</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: INTERACTIVE TERMINAL SIMULATOR -->
+        <section id="terminal" class="scroll-mt-24 space-y-8">
+            <div class="border-l-4 border-docker-blue pl-4">
+                <h2 class="text-xs uppercase tracking-widest text-docker-blue font-mono font-semibold">Section 04</h2>
+                <h3 class="text-2xl sm:text-3xl font-bold text-white">Interactive Command CLI</h3>
+                <p class="text-slate-400 text-sm mt-1">Try running essential Docker commands directly in this simulated shell.</p>
+            </div>
+
+            <div class="grid lg:grid-cols-12 gap-8">
+                <!-- Terminal Box (7 cols) -->
+                <div class="lg:col-span-7 bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col h-[420px]">
+                    <!-- Terminal Top Bar -->
+                    <div class="bg-slate-900 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+                            <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+                            <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+                            <span class="text-xs font-mono text-slate-400 ml-2">bash - docker engine v24.0</span>
+                        </div>
+                        <button onclick="clearTerminal()" class="text-xs text-slate-500 hover:text-slate-300 font-mono">Clear</button>
+                    </div>
+
+                    <!-- Terminal Output Window -->
+                    <div id="terminal-screen" class="p-4 font-mono text-xs space-y-3 overflow-y-auto flex-1 text-slate-300">
+                        <div class="text-slate-500">Welcome to Docker CLI Simulator. Click a command on the right or type below.</div>
+                        <div class="text-slate-500">Type <span class="text-docker-blue">'help'</span> for a list of available commands.</div>
+                    </div>
+
+                    <!-- Terminal Prompt Input -->
+                    <form id="terminal-form" onsubmit="handleTerminalSubmit(event)" class="bg-slate-900/60 p-3 border-t border-slate-800/80 flex items-center space-x-2">
+                        <span class="text-emerald-400 font-mono text-xs font-bold">user@docker-host:~$</span>
+                        <input type="text" id="terminal-input" autocomplete="off" placeholder="docker run -d -p 80:80 nginx" class="bg-transparent border-none outline-none font-mono text-xs text-white w-full focus:ring-0">
+                    </form>
+                </div>
+
+                <!-- Command Quick Buttons (5 cols) -->
+                <div class="lg:col-span-5 space-y-4">
+                    <h4 class="text-sm font-semibold text-slate-300 uppercase tracking-wider font-mono">Quick Run Buttons</h4>
+
+                    <div class="space-y-3">
+                        <button onclick="runSimulatedCommand('docker pull nginx')" class="w-full text-left p-3 rounded-xl glass-panel border border-slate-800 hover:border-docker-blue/50 transition-all group">
+                            <div class="flex items-center justify-between font-mono text-xs text-cyan-400 group-hover:text-docker-blue">
+                                <span>docker pull nginx</span>
+                                <i data-lucide="play" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1">Downloads the official NGINX web server image from Docker Hub.</p>
+                        </button>
+
+                        <button onclick="runSimulatedCommand('docker run -d -p 80:80 nginx')" class="w-full text-left p-3 rounded-xl glass-panel border border-slate-800 hover:border-docker-blue/50 transition-all group">
+                            <div class="flex items-center justify-between font-mono text-xs text-emerald-400 group-hover:text-docker-blue">
+                                <span>docker run -d -p 80:80 nginx</span>
+                                <i data-lucide="play" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1">Starts an isolated NGINX web server container in the background.</p>
+                        </button>
+
+                        <button onclick="runSimulatedCommand('docker ps')" class="w-full text-left p-3 rounded-xl glass-panel border border-slate-800 hover:border-docker-blue/50 transition-all group">
+                            <div class="flex items-center justify-between font-mono text-xs text-amber-400 group-hover:text-docker-blue">
+                                <span>docker ps</span>
+                                <i data-lucide="play" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1">Lists all active and running containers on your engine.</p>
+                        </button>
+
+                        <button onclick="runSimulatedCommand('docker stop web-server')" class="w-full text-left p-3 rounded-xl glass-panel border border-slate-800 hover:border-docker-blue/50 transition-all group">
+                            <div class="flex items-center justify-between font-mono text-xs text-rose-400 group-hover:text-docker-blue">
+                                <span>docker stop web-server</span>
+                                <i data-lucide="play" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1">Gracefully terminates the specified running container.</p>
+                        </button>
+                    </div>
+
+                    <!-- Running Containers Status Board -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-400 font-mono">Active Containers:</span>
+                            <span id="active-count" class="font-bold text-docker-blue font-mono">0 Running</span>
+                        </div>
+                        <div id="container-status-list" class="text-xs font-mono text-slate-500 italic py-1">
+                            No active containers running.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: KEY TAKEAWAYS -->
+        <section class="glass-panel p-8 sm:p-10 rounded-3xl border border-docker-blue/30 relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-docker-blue/10 rounded-full blur-2xl"></div>
+            
+            <div class="max-w-3xl space-y-6">
+                <div class="inline-flex items-center space-x-2 text-docker-blue font-mono text-xs font-bold uppercase tracking-wider">
+                    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                    <span>Summary Review</span>
+                </div>
+                
+                <h3 class="text-3xl font-extrabold text-white">Why Developers Love Docker</h3>
+                
+                <div class="grid sm:grid-cols-2 gap-4 pt-2">
+                    <div class="flex items-start space-x-3 p-3 rounded-xl bg-slate-900/50 border border-slate-800">
+                        <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5"></i>
+                        <div class="text-xs text-slate-300">
+                            <strong class="text-white block font-semibold mb-0.5">100% Consistency</strong>
+                            Guarantees your code runs identically in development, testing, and production environments.
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start space-x-3 p-3 rounded-xl bg-slate-900/50 border border-slate-800">
+                        <i data-lucide="zap" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+                        <div class="text-xs text-slate-300">
+                            <strong class="text-white block font-semibold mb-0.5">Instant Onboarding</strong>
+                            New devs can clone a repo and start working in minutes with <code class="text-cyan-400 font-mono">docker compose up</code>.
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-3 p-3 rounded-xl bg-slate-900/50 border border-slate-800">
+                        <i data-lucide="cpu" class="w-5 h-5 text-blue-400 shrink-0 mt-0.5"></i>
+                        <div class="text-xs text-slate-300">
+                            <strong class="text-white block font-semibold mb-0.5">Resource Efficient</strong>
+                            Pack dozens of microservices on a single server without the heavy overhead of full OS virtualization.
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-3 p-3 rounded-xl bg-slate-900/50 border border-slate-800">
+                        <i data-lucide="layers" class="w-5 h-5 text-purple-400 shrink-0 mt-0.5"></i>
+                        <div class="text-xs text-slate-300">
+                            <strong class="text-white block font-semibold mb-0.5">Microservice Ready</strong>
+                            Isolate databases, web servers, and caching layers into distinct modular containers.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 py-8 text-center text-xs text-slate-500 font-mono">
+        <p>Created for Computer Science Beginners • Interactive Web Article</p>
+    </footer>
+
+    <!-- Interactive Logic Script -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        /* -------------------------------------------------------------
+           SECTION 1: ENVIRONMENT MISMATCH SIMULATION LOGIC
+        ------------------------------------------------------------- */
+        let isDev = true;
+        const toggleEnvBtn = document.getElementById('toggle-env-btn');
+        const statusBadge = document.getElementById('status-badge');
+        const targetEnvDesc = document.getElementById('target-env-desc');
+        const deployConsole = document.getElementById('deploy-console');
+
+        toggleEnvBtn.addEventListener('click', () => {
+            isDev = !isDev;
+            if (isDev) {
+                statusBadge.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                statusBadge.innerText = "Dev Machine: OK";
+                targetEnvDesc.innerText = "Developer Laptop (Matching Setup)";
+                toggleEnvBtn.innerHTML = `<span>Deploy to Production Server</span> <i data-lucide="arrow-right" class="w-3.5 h-3.5 inline"></i>`;
+                deployConsole.className = "bg-slate-950 p-3.5 rounded-lg border border-slate-800 font-mono text-xs text-emerald-400 min-h-[70px] flex items-center";
+                deployConsole.innerHTML = "🚀 [Status 200] Application running smoothly on Dev Machine.";
+            } else {
+                statusBadge.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20";
+                statusBadge.innerText = "Production: FAILED";
+                targetEnvDesc.innerText = "AWS Linux Server (Missing Dependencies)";
+                toggleEnvBtn.innerHTML = `<span>Reset to Dev Laptop</span> <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 inline"></i>`;
+                deployConsole.className = "bg-slate-950 p-3.5 rounded-lg border border-rose-900/50 font-mono text-xs text-rose-400 min-h-[70px] flex items-center";
+                deployConsole.innerHTML = "❌ [CRASH ERROR] ModuleNotFoundError: Python version 3.8 installed (3.11 required). Shared library 'libssl1.1' not found.";
+            }
+            lucide.createIcons();
+        });
+
+        /* -------------------------------------------------------------
+           SECTION 2: VM VS CONTAINER COMPARISON SWITCHER
+        ------------------------------------------------------------- */
+        const techData = {
+            container: {
+                title: "Lightweight & Fast",
+                badge: "DOCKER CONTAINER STACK",
+                badgeClass: "bg-docker-blue/10 text-docker-blue border-docker-blue/20",
+                desc: "Containers share the host operating system kernel. They only bundle your application code and its specific dependencies—no heavy Guest OS needed!",
+                startup: "< 1 Second",
+                size: "~50 MB - 200 MB",
+                os: "Shared Host Kernel",
+                efficiency: "Native Speed",
+                stack: [
+                    { title: "App 1 Code & Dependencies", color: "bg-docker-blue text-slate-950 font-bold", desc: "Just the code & libs" },
+                    { title: "Docker Engine Containerization", color: "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30", desc: "Lightweight isolation manager" },
+                    { title: "Shared Host Operating System (Linux / macOS)", color: "bg-slate-800 text-slate-300", desc: "Single shared OS kernel" },
+                    { title: "Physical Server Hardware (CPU / RAM)", color: "bg-slate-900 text-slate-400", desc: "Base infrastructure" }
+                ]
+            },
+            vm: {
+                title: "Heavyweight & Isolated",
+                badge: "VIRTUAL MACHINE STACK",
+                badgeClass: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+                desc: "Virtual Machines use a Hypervisor to emulate complete virtual hardware. Each VM requires its own entire Guest Operating System (GBs of storage).",
+                startup: "1 - 5 Minutes",
+                size: "10 GB - 50 GB+",
+                os: "Full Guest OS per VM",
+                efficiency: "Emulation Overhead",
+                stack: [
+                    { title: "App 1 Code & Dependencies", color: "bg-purple-500/20 text-purple-300 border border-purple-500/30", desc: "Your application" },
+                    { title: "Full Guest OS (Ubuntu / Windows Server)", color: "bg-rose-500/20 text-rose-300 border border-rose-500/30", desc: "Duplicate heavy OS kernel (GBs)" },
+                    { title: "Hypervisor (VMware / VirtualBox)", color: "bg-slate-800 text-slate-300", desc: "Hardware virtualization layer" },
+                    { title: "Physical Server Hardware (CPU / RAM)", color: "bg-slate-900 text-slate-400", desc: "Base infrastructure" }
+                ]
+            }
+        };
+
+        function switchTech(type) {
+            const data = techData[type];
+            const tabContainer = document.getElementById('tab-container');
+            const tabVm = document.getElementById('tab-vm');
+
+            if (type === 'container') {
+                tabContainer.className = "px-5 py-2.5 rounded-lg text-sm font-semibold transition-all bg-docker-blue text-slate-950 shadow-md shadow-docker-blue/20";
+                tabVm.className = "px-5 py-2.5 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-white";
+            } else {
+                tabVm.className = "px-5 py-2.5 rounded-lg text-sm font-semibold transition-all bg-purple-500 text-white shadow-md shadow-purple-500/20";
+                tabContainer.className = "px-5 py-2.5 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:text-white";
+            }
+
+            document.getElementById('tech-title').innerText = data.title;
+            document.getElementById('tech-badge').innerText = data.badge;
+            document.getElementById('tech-badge').className = `px-2.5 py-1 rounded-md text-xs font-mono font-bold border ${data.badgeClass}`;
+            document.getElementById('tech-desc').innerText = data.desc;
+            document.getElementById('stat-startup').innerText = data.startup;
+            document.getElementById('stat-size').innerText = data.size;
+            document.getElementById('stat-os').innerText = data.os;
+            document.getElementById('stat-efficiency').innerText = data.efficiency;
+
+            // Render Stack Layer
+            const stackContainer = document.getElementById('architecture-stack');
+            stackContainer.innerHTML = data.stack.map(layer => `
+                <div class="p-3.5 rounded-xl transition-all duration-300 ${layer.color} flex justify-between items-center text-xs font-mono">
+                    <span>${layer.title}</span>
+                    <span class="text-[10px] opacity-75">${layer.desc}</span>
+                </div>
+            `).join('');
+        }
+
+        // Initialize Section 2 view
+        switchTech('container');
+
+        /* -------------------------------------------------------------
+           SECTION 3: ARCHITECTURE CONCEPT SELECTOR
+        ------------------------------------------------------------- */
+        const concepts = {
+            dockerfile: {
+                tag: "BUILD PHASE",
+                analog: "Analogy: The Architectural Blueprint",
+                title: "The Dockerfile",
+                body: "A plain text file containing step-by-step instructions for Docker. It specifies the base operating system, code copy directions, environment flags, and the startup command.",
+                code: `<div class="text-slate-500 mb-1"># Example Dockerfile</div>
+<span class="text-purple-400">FROM</span> node:18-alpine
+<span class="text-purple-400">WORKDIR</span> /app
+<span class="text-purple-400">COPY</span> package*.json ./
+<span class="text-purple-400">RUN</span> npm install
+<span class="text-purple-400">COPY</span> . .
+<span class="text-purple-400">CMD</span> ["node", "server.js"]`
+            },
+            image: {
+                tag: "PACKAGE PHASE",
+                analog: "Analogy: The Frozen Snapshot / CD-ROM",
+                title: "Docker Image",
+                body: "An immutable (read-only) package containing everything needed to run an app: code, runtime libraries, environment settings, and dependencies. Images are built from Dockerfiles.",
+                code: `<div class="text-slate-500 mb-1"># Command to build an image from a Dockerfile</div>
+<span class="text-emerald-400">$ docker build -t my-web-app:v1.0 .</span>
+
+<span class="text-slate-400">[+] Building 2.4s (7/7) FINISHED</span>
+<span class="text-slate-500"> => naming to docker.io/library/my-web-app:v1.0</span>`
+            },
+            container: {
+                tag: "EXECUTION PHASE",
+                analog: "Analogy: The Live Running Factory",
+                title: "Docker Container",
+                body: "A runnable, isolated instance of a Docker Image. You can create, start, stop, move, or delete containers using the Docker API or CLI. Multiple containers can run from a single image.",
+                code: `<div class="text-slate-500 mb-1"># Starting an isolated container</div>
+<span class="text-emerald-400">$ docker run -d -p 8080:80 --name app-container my-web-app:v1.0</span>
+
+<span class="text-slate-400">e92d8f7b3a1c2... (Container ID)</span>
+<span class="text-emerald-400">Status: Up 5 seconds (Port 8080 mapped)</span>`
+            },
+            hub: {
+                tag: "DISTRIBUTION PHASE",
+                analog: "Analogy: App Store / GitHub for Containers",
+                title: "Docker Hub / Registry",
+                body: "A cloud library for sharing container images. Public registries like Docker Hub allow developers to download pre-built images for databases (PostgreSQL, Redis) and web servers (NGINX) instantly.",
+                code: `<div class="text-slate-500 mb-1"># Pulling pre-made official image from registry</div>
+<span class="text-emerald-400">$ docker pull postgres:15-alpine</span>
+
+<span class="text-slate-500">15-alpine: Pulling from library/postgres</span>
+<span class="text-slate-400">Digest: sha256:a890f... Download complete.</span>`
+            }
+        };
+
+        function selectConcept(id) {
+            // Update Card Highlights
+            document.querySelectorAll('.concept-card').forEach(card => {
+                card.className = "concept-card w-full text-left p-4 rounded-xl glass-panel border border-slate-800 transition-all hover:border-docker-blue";
+            });
+            const activeCard = document.getElementById(`card-${id}`);
+            activeCard.className = "concept-card w-full text-left p-4 rounded-xl glass-panel border border-docker-blue/50 bg-docker-blue/10 transition-all";
+
+            // Update Detail Content
+            const data = concepts[id];
+            document.getElementById('concept-tag').innerText = data.tag;
+            document.getElementById('concept-analog').innerText = data.analog;
+            document.getElementById('concept-title').innerText = data.title;
+            document.getElementById('concept-body').innerText = data.body;
+            document.getElementById('concept-code').innerHTML = data.code;
+        }
+
+        /* -------------------------------------------------------------
+           SECTION 4: SIMULATED CLI TERMINAL INTERACTION
+        ------------------------------------------------------------- */
+        let runningContainers = [];
+
+        function appendTerminalOutput(cmd, responseHtml) {
+            const screen = document.getElementById('terminal-screen');
+            const entry = document.createElement('div');
+            entry.className = "space-y-1";
+            entry.innerHTML = `
+                <div class="flex items-center space-x-2 text-emerald-400">
+                    <span>user@docker-host:~$</span>
+                    <span class="text-white">${cmd}</span>
+                </div>
+                <div class="text-slate-300 pl-4 border-l border-slate-800 leading-relaxed">${responseHtml}</div>
+            `;
+            screen.appendChild(entry);
+            screen.scrollTop = screen.scrollHeight;
+        }
+
+        function updateContainerStatusUI() {
+            const list = document.getElementById('container-status-list');
+            const count = document.getElementById('active-count');
+
+            count.innerText = `${runningContainers.length} Running`;
+
+            if (runningContainers.length === 0) {
+                list.innerHTML = `<span class="italic text-slate-500">No active containers running.</span>`;
+            } else {
+                list.innerHTML = runningContainers.map(c => `
+                    <div class="flex items-center justify-between text-xs py-1 border-b border-slate-900">
+                        <span class="text-cyan-400 font-bold">${c.name}</span>
+                        <span class="text-slate-400">${c.image}</span>
+                        <span class="text-emerald-400 text-[10px] bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">UP (Port ${c.port})</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function runSimulatedCommand(cmdStr) {
+            const cleanCmd = cmdStr.trim();
+            if (!cleanCmd) return;
+
+            let response = "";
+
+            if (cleanCmd === "docker pull nginx") {
+                response = `<span class="text-slate-400">Using default tag: latest<br>latest: Pulling from library/nginx<br>a2abf6c4d: Pull complete<br>Digest: sha256:1a2b3c...<br><span class="text-emerald-400">Status: Downloaded newer image for nginx:latest</span></span>`;
+            } else if (cleanCmd.startsWith("docker run")) {
+                const id = Math.random().toString(36).substring(2, 10);
+                const hasNginx = runningContainers.some(c => c.name === "web-server");
+                
+                if (!hasNginx) {
+                    runningContainers.push({ id, name: "web-server", image: "nginx:latest", port: "80:80" });
+                    response = `<span class="text-slate-400">${id}4910f2c8192a8381923891283<br><span class="text-emerald-400">Container 'web-server' started successfully on port 80.</span></span>`;
+                } else {
+                    response = `<span class="text-amber-400">Container 'web-server' is already running.</span>`;
+                }
+            } else if (cleanCmd === "docker ps") {
+                if (runningContainers.length === 0) {
+                    response = `<span class="text-slate-500">CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS   PORTS   NAMES</span><br><span class="text-slate-500">(No containers running)</span>`;
+                } else {
+                    let table = `<span class="text-slate-500">CONTAINER ID   IMAGE          COMMAND                  STATUS         NAMES</span><br>`;
+                    runningContainers.forEach(c => {
+                        table += `<span class="text-cyan-400">${c.id}</span>   <span class="text-slate-300">${c.image}</span>   <span class="text-slate-400">"nginx -g 'daemon..."</span>   <span class="text-emerald-400">Up 10s</span>   <span class="text-white">${c.name}</span><br>`;
+                    });
+                    response = table;
+                }
+            } else if (cleanCmd.startsWith("docker stop")) {
+                if (runningContainers.length > 0) {
+                    const stopped = runningContainers.pop();
+                    response = `<span class="text-rose-400">${stopped.name}</span><br><span class="text-slate-400">Container stopped gracefully.</span>`;
+                } else {
+                    response = `<span class="text-slate-500">No active container found to stop.</span>`;
+                }
+            } else if (cleanCmd === "help") {
+                response = `<span class="text-slate-400">Available demo commands:<br> - <code class="text-cyan-400">docker pull nginx</code><br> - <code class="text-cyan-400">docker run -d -p 80:80 nginx</code><br> - <code class="text-cyan-400">docker ps</code><br> - <code class="text-cyan-400">docker stop web-server</code></span>`;
+            } else {
+                response = `<span class="text-rose-400">Command not recognized in demo. Try typing 'help' or click quick buttons.</span>`;
+            }
+
+            appendTerminalOutput(cleanCmd, response);
+            updateContainerStatusUI();
+        }
+
+        function handleTerminalSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('terminal-input');
+            runSimulatedCommand(input.value);
+            input.value = '';
+        }
+
+        function clearTerminal() {
+            document.getElementById('terminal-screen').innerHTML = `<div class="text-slate-500">Terminal output cleared.</div>`;
+        }
+    </script>
+</body>
+</html>
